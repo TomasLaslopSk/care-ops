@@ -1,0 +1,19 @@
+**/node_modules
+**/dist
+**/build
+**/.gradle
+**/dist_stale_*
+care-api/data.json
+# NOT part of the Care Ops project — keep the production eshop out of this repo
+luxvlasy
+luxvlasy-frontend
+luxvlasy-next
+luxvlasy-react
+.DS_Store
+*.local
+*.log
+# Kotlin/Android local files
+**/local.properties
+**/.idea
+**/.kotlin
+**/captures

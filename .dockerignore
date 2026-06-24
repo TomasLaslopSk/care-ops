@@ -1,0 +1,9 @@
+**/node_modules
+**/dist
+**/build
+.git
+.gradle
+care-ops-mui
+care-carer-kmp
+**/data.json
+**/.DS_Store

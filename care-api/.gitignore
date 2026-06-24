@@ -1,0 +1,3 @@
+node_modules/
+# Runtime persistence store (created on first boot). Not committed.
+data.json

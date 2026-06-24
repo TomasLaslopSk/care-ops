@@ -1,0 +1,21 @@
+name: night-agent
+
+# Runs the agent in the CLOUD (no Mac needed) and posts a run record to the live
+# care-api, where the admin reviews it in the Agent Runs UI. Cron is UTC.
+on:
+  schedule:
+    - cron: "0 2 * * *" # 02:00 UTC nightly
+  workflow_dispatch: {} # also runnable on demand from the Actions tab
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - name: Post an agent run to the live API
+        run: node .agents/run-agent.mjs
+        env:
+          AGENT_API: ${{ secrets.AGENT_API }} # e.g. https://care.prevlasy.sk
+          AGENT_INGEST_KEY: ${{ secrets.AGENT_INGEST_KEY }}

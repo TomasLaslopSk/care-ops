@@ -1,0 +1,20 @@
+@import "tailwindcss";
+
+/* === Design tokens (token-driven design system — generate Tailwind utilities like bg-surface, text-muted...) === */
+@theme {
+  --color-bg: #0b0f17;
+  --color-surface: #121a28;
+  --color-surface-2: #182234;
+  --color-border: #243044;
+  --color-text: #e7eef9;
+  --color-muted: #8aa0bd;
+  --color-primary: #7c5cff;
+  --color-secondary: #8b5cf6;
+  --color-success: #2ec27e;
+  --color-warning: #f5a524;
+  --color-danger: #f4496d;
+  --radius-lg: 14px;
+}
+
+html, body, #root { height: 100%; }
+body { margin: 0; background-color: var(--color-bg); color: var(--color-text); font-family: ui-sans-serif, system-ui, sans-serif; }

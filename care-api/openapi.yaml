@@ -1,0 +1,515 @@
+openapi: 3.0.3
+info:
+  title: Care Ops API
+  version: 0.1.0
+  description: >
+    Shared in-memory backend for the Care Ops learning frontends.
+    This file is the contract — both frontends generate their TypeScript
+    types from it via openapi-typescript.
+servers:
+  - url: http://localhost:3001
+paths:
+  /api/health:
+    get:
+      operationId: getHealth
+      summary: Health check
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  ts: { type: integer }
+                required: [ok, ts]
+  /api/carers:
+    get:
+      operationId: getCarers
+      summary: List carers (optionally filtered)
+      parameters:
+        - name: region
+          in: query
+          schema: { type: string }
+        - name: status
+          in: query
+          schema: { $ref: "#/components/schemas/CarerStatus" }
+      responses:
+        "200":
+          description: Carers
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CarersResponse" }
+  /api/stats:
+    get:
+      operationId: getStats
+      summary: Dashboard summary stats (operator/admin only)
+      responses:
+        "200":
+          description: Stats
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StatsResponse" }
+        "403": { description: Forbidden }
+  /api/visits:
+    get:
+      operationId: getVisits
+      summary: List visits (optionally filtered)
+      parameters:
+        - name: status
+          in: query
+          schema: { $ref: "#/components/schemas/VisitStatus" }
+        - name: carerId
+          in: query
+          schema: { type: string }
+        - name: limit
+          in: query
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Visits
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/VisitsResponse" }
+    post:
+      operationId: createVisit
+      summary: Create a visit (operator only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/NewVisitRequest" }
+      responses:
+        "201":
+          description: Created visit
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Visit" }
+        "400": { description: Validation error }
+        "403": { description: Forbidden }
+  /api/visits/{id}:
+    get:
+      operationId: getVisit
+      summary: A single visit (scoped by role)
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        "200": { description: Visit, content: { application/json: { schema: { $ref: "#/components/schemas/Visit" } } } }
+        "403": { description: Forbidden }
+        "404": { description: Not found }
+    patch:
+      operationId: assignVisit
+      summary: Assign or reassign a visit to a carer (operator only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AssignVisitRequest" }
+      responses:
+        "200":
+          description: Updated visit
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Visit" }
+        "403":
+          description: Forbidden
+        "404":
+          description: Not found
+  /api/visits/{id}/check-in:
+    post:
+      operationId: checkInVisit
+      summary: Carer checks in to a visit (assigned carer or operator).
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CheckInRequest" }
+      responses:
+        "200": { description: Updated visit, content: { application/json: { schema: { $ref: "#/components/schemas/Visit" } } } }
+        "403": { description: Forbidden }
+  /api/visits/{id}/tasks/{taskId}:
+    put:
+      operationId: toggleVisitTask
+      summary: Mark a visit task done/undone (assigned carer or operator)
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+        - { name: taskId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TaskToggleRequest" }
+      responses:
+        "200": { description: Updated visit, content: { application/json: { schema: { $ref: "#/components/schemas/Visit" } } } }
+        "403": { description: Forbidden }
+  /api/visits/{id}/check-out:
+    post:
+      operationId: checkOutVisit
+      summary: Carer checks out of a visit (assigned carer or operator)
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        "200": { description: Updated visit, content: { application/json: { schema: { $ref: "#/components/schemas/Visit" } } } }
+        "403": { description: Forbidden }
+  /api/visits/{id}/report:
+    put:
+      operationId: saveVisitReport
+      summary: Save the visit report (assigned carer or operator)
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/VisitReportRequest" }
+      responses:
+        "200": { description: Updated visit, content: { application/json: { schema: { $ref: "#/components/schemas/Visit" } } } }
+        "403": { description: Forbidden }
+  /api/agent-runs:
+    get:
+      operationId: getAgentRuns
+      summary: List AI agent runs awaiting supervision (admin only)
+      responses:
+        "200":
+          description: Runs
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AgentRunsResponse" }
+        "403": { description: Forbidden }
+  /api/agent-runs/{id}/decision:
+    post:
+      operationId: decideAgentRun
+      summary: Approve or override an agent run, capturing a rationale (admin only)
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AgentDecisionRequest" }
+      responses:
+        "200":
+          description: Updated run
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AgentRun" }
+        "403": { description: Forbidden }
+  /api/clients:
+    get:
+      operationId: getClients
+      summary: List clients (operator only)
+      responses:
+        "200":
+          description: Clients
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ClientsResponse" }
+        "403":
+          description: Forbidden
+  /api/messages:
+    get:
+      operationId: getMessages
+      summary: List chat messages in a channel
+      parameters:
+        - name: channelId
+          in: query
+          schema: { type: string }
+      responses:
+        "200":
+          description: Messages
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MessagesResponse" }
+    post:
+      operationId: postMessage
+      summary: Post a chat message (broadcast over SSE)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/NewMessage" }
+      responses:
+        "201":
+          description: Created message
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Message" }
+        "400":
+          description: Validation error
+  /api/auth/login:
+    post:
+      operationId: login
+      summary: Log in with email + password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LoginRequest" }
+      responses:
+        "200":
+          description: Token + user
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LoginResponse" }
+        "401":
+          description: Invalid credentials
+  /api/auth/me:
+    get:
+      operationId: getMe
+      summary: Current user (from token)
+      responses:
+        "200":
+          description: User
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/User" }
+        "401":
+          description: Unauthorized
+  /api/channels:
+    get:
+      operationId: getChannels
+      summary: Chat channels visible to the current user
+      responses:
+        "200":
+          description: Channels
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ChannelsResponse" }
+components:
+  schemas:
+    Role:
+      type: string
+      enum: [carer, operator, relative, admin]
+    AgentRun:
+      type: object
+      properties:
+        id: { type: string }
+        agent: { type: string }
+        project: { type: string }
+        task: { type: string }
+        summary: { type: string }
+        rationale: { type: string }
+        diff: { type: string }
+        provenance:
+          type: object
+          properties:
+            skill: { type: string }
+            scope: { type: string }
+            prompt: { type: string }
+          required: [skill, scope, prompt]
+        status: { type: string, enum: [proposed, approved, overridden] }
+        createdAt: { type: string, format: date-time }
+        decidedAt: { type: string, format: date-time }
+        decisionNote: { type: string }
+      required: [id, agent, project, task, summary, rationale, diff, provenance, status, createdAt]
+    AgentRunsResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items: { $ref: "#/components/schemas/AgentRun" }
+        total: { type: integer }
+      required: [data, total]
+    AgentDecisionRequest:
+      type: object
+      properties:
+        decision: { type: string, enum: [approved, overridden] }
+        note: { type: string }
+      required: [decision]
+    User:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        email: { type: string }
+        role: { $ref: "#/components/schemas/Role" }
+        carerId: { type: string }
+        relatedClientId: { type: string }
+      required: [id, name, email, role]
+    LoginRequest:
+      type: object
+      properties:
+        email: { type: string }
+        password: { type: string }
+        app: { type: string, enum: [ops, mobile], description: "Which front-end is signing in (gates by role)" }
+      required: [email, password]
+    LoginResponse:
+      type: object
+      properties:
+        token: { type: string }
+        user: { $ref: "#/components/schemas/User" }
+      required: [token, user]
+    Channel:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+      required: [id, name]
+    ChannelsResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items: { $ref: "#/components/schemas/Channel" }
+        total: { type: integer }
+      required: [data, total]
+    StatsResponse:
+      type: object
+      properties:
+        todaysVisits: { type: integer }
+        activeCarers: { type: integer }
+        totalCarers: { type: integer }
+        openAlerts: { type: integer }
+      required: [todaysVisits, activeCarers, totalCarers, openAlerts]
+    CarerStatus:
+      type: string
+      enum: [active, inactive, onboarding]
+    VisitStatus:
+      type: string
+      enum: [scheduled, in_progress, completed, missed]
+    Carer:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        region: { type: string }
+        status: { $ref: "#/components/schemas/CarerStatus" }
+        visitsThisWeek: { type: integer }
+      required: [id, name, region, status, visitsThisWeek]
+    Visit:
+      type: object
+      properties:
+        id: { type: string }
+        clientId: { type: string }
+        client: { type: string }
+        carerId: { type: string }
+        carerName: { type: string }
+        region: { type: string }
+        scheduledAt: { type: string, format: date-time }
+        durationMin: { type: integer }
+        status: { $ref: "#/components/schemas/VisitStatus" }
+        clientLat: { type: number }
+        clientLng: { type: number }
+        clientAddress: { type: string }
+        tasks:
+          type: array
+          items: { $ref: "#/components/schemas/VisitTask" }
+        checkInAt: { type: string, format: date-time }
+        checkOutAt: { type: string, format: date-time }
+        report: { type: string }
+      required: [id, clientId, client, clientLat, clientLng, clientAddress, carerId, carerName, region, scheduledAt, durationMin, status, tasks]
+    Client:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        region: { type: string }
+        lat: { type: number }
+        lng: { type: number }
+        address: { type: string }
+      required: [id, name, region, lat, lng, address]
+    VisitTask:
+      type: object
+      properties:
+        id: { type: string }
+        label: { type: string }
+        done: { type: boolean }
+      required: [id, label, done]
+    ClientsResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items: { $ref: "#/components/schemas/Client" }
+        total: { type: integer }
+      required: [data, total]
+    AssignVisitRequest:
+      type: object
+      properties:
+        carerId: { type: string }
+      required: [carerId]
+    VisitReportRequest:
+      type: object
+      properties:
+        report: { type: string }
+      required: [report]
+    NewVisitRequest:
+      type: object
+      properties:
+        clientId: { type: string }
+        carerId: { type: string }
+        scheduledAt: { type: string, format: date-time }
+        durationMin: { type: integer }
+        tasks:
+          type: array
+          items: { type: string }
+      required: [clientId, carerId, scheduledAt, durationMin]
+    CheckInRequest:
+      type: object
+      properties:
+        lat: { type: number }
+        lng: { type: number }
+      required: [lat, lng]
+    TaskToggleRequest:
+      type: object
+      properties:
+        done: { type: boolean }
+      required: [done]
+    Message:
+      type: object
+      properties:
+        id: { type: string }
+        channelId: { type: string }
+        author: { type: string }
+        body: { type: string }
+        createdAt: { type: string, format: date-time }
+      required: [id, channelId, author, body, createdAt]
+    NewMessage:
+      type: object
+      properties:
+        channelId: { type: string }
+        author: { type: string }
+        body: { type: string }
+      required: [body]
+    Alert:
+      type: object
+      description: Payload of an SSE "alert" event (not a REST response).
+      properties:
+        id: { type: string }
+        level: { type: string, enum: [info, warning, critical] }
+        message: { type: string }
+        visitId: { type: string }
+        ts: { type: integer }
+      required: [id, level, message, visitId, ts]
+    CarersResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items: { $ref: "#/components/schemas/Carer" }
+        total: { type: integer }
+      required: [data, total]
+    VisitsResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items: { $ref: "#/components/schemas/Visit" }
+        total: { type: integer }
+      required: [data, total]
+    MessagesResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items: { $ref: "#/components/schemas/Message" }
+        total: { type: integer }
+      required: [data, total]
