@@ -12,7 +12,7 @@ const time = (iso: string) =>
 
 export default function Chat() {
   const user = useAuthStore((s) => s.user)!;
-  const isOperator = user.role === "operator";
+  const isOperator = user.role === "operator" || user.role === "admin";
 
   // Operator picks a channel; carer/relative are fixed to their own.
   const { data: channels } = useGetChannels();

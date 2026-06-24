@@ -35,6 +35,11 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Ops-level access = operators AND admins. Admin is a superset of operator:
+// it can do everything an operator can, plus the agent-supervision screens.
+const isOps = (u: AuthedRequest["user"]) =>
+  !!u && (u.role === "operator" || u.role === "admin");
+
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 // --- Public: health + contract ---
@@ -132,7 +137,7 @@ app.get("/api/visits", requireAuth, (req: AuthedRequest, res) => {
 
 // Create a visit (operator only). Carers/relatives cannot create visits.
 app.post("/api/visits", requireAuth, (req: AuthedRequest, res) => {
-  if (req.user!.role !== "operator") return res.status(403).json({ error: "operator only" });
+  if (!isOps(req.user)) return res.status(403).json({ error: "operator only" });
   const { clientId, carerId, scheduledAt, durationMin, tasks } = req.body ?? {};
   const client = clients.find((c) => c.id === clientId);
   const carer = carers.find((c) => c.id === carerId);
@@ -163,7 +168,7 @@ app.post("/api/visits", requireAuth, (req: AuthedRequest, res) => {
 
 // Clients (operator only) — the people receiving care.
 app.get("/api/clients", requireAuth, (req: AuthedRequest, res) => {
-  if (req.user!.role !== "operator") return res.status(403).json({ error: "operator only" });
+  if (!isOps(req.user)) return res.status(403).json({ error: "operator only" });
   res.json({ data: clients, total: clients.length });
 });
 
@@ -173,7 +178,7 @@ app.get("/api/visits/:id", requireAuth, (req: AuthedRequest, res) => {
   if (!v) return res.status(404).json({ error: "visit not found" });
   const u = req.user!;
   const allowed =
-    u.role === "operator" ||
+    isOps(u) ||
     (u.role === "carer" && v.carerId === u.carerId) ||
     (u.role === "relative" && v.clientId === u.relatedClientId);
   if (!allowed) return res.status(403).json({ error: "forbidden" });
@@ -183,7 +188,7 @@ app.get("/api/visits/:id", requireAuth, (req: AuthedRequest, res) => {
 // Only the assigned carer (or an operator) may check in / out / write the report.
 function canActOnVisit(u: AuthedRequest["user"], v: (typeof visits)[number]): boolean {
   if (!u) return false;
-  return u.role === "operator" || (u.role === "carer" && v.carerId === u.carerId);
+  return isOps(u) || (u.role === "carer" && v.carerId === u.carerId);
 }
 
 app.post("/api/visits/:id/check-in", requireAuth, (req: AuthedRequest, res) => {
@@ -231,7 +236,7 @@ app.put("/api/visits/:id/report", requireAuth, (req: AuthedRequest, res) => {
 
 // Assign / reassign a visit to a carer (operator only).
 app.patch("/api/visits/:id", requireAuth, (req: AuthedRequest, res) => {
-  if (req.user!.role !== "operator") return res.status(403).json({ error: "operator only" });
+  if (!isOps(req.user)) return res.status(403).json({ error: "operator only" });
   const visit = visits.find((v) => v.id === req.params.id);
   if (!visit) return res.status(404).json({ error: "visit not found" });
 
@@ -250,8 +255,8 @@ app.get("/api/channels", requireAuth, (req: AuthedRequest, res) => {
   const user = req.user!;
   const nameForChannel = (id: string) =>
     carers.find((c) => c.id === id)?.name ?? clients.find((c) => c.id === id)?.name ?? id;
-  if (user.role === "operator") {
-    // Operators can open every carer and every client channel.
+  if (isOps(user)) {
+    // Operators (and admins) can open every carer and every client channel.
     const data = [
       ...carers.map((c) => ({ id: c.id, name: `Carer · ${c.name}` })),
       ...clients.map((c) => ({ id: c.id, name: `Client · ${c.name}` })),
@@ -266,7 +271,7 @@ app.get("/api/channels", requireAuth, (req: AuthedRequest, res) => {
 // Resolve which channel this request targets, honoring role.
 function resolveChannel(user: AuthedRequest["user"], requested?: string): string | undefined {
   if (!user) return undefined;
-  if (user.role === "operator") return requested || carers[0].id;
+  if (isOps(user)) return requested || carers[0].id;
   return ownChannel(user); // carer/relative: forced to their own channel
 }
 

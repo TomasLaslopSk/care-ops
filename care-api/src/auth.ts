@@ -31,7 +31,7 @@ export function requireAuth(req: AuthedRequest, res: Response, next: NextFunctio
 // Chat channel ids: a carer's channel == carerId, a client's channel == clientId.
 // Operator -> any; carer -> their carer channel; relative -> their client channel.
 export function canSeeChannel(user: User, channelId: string): boolean {
-  if (user.role === "operator") return true;
+  if (user.role === "operator" || user.role === "admin") return true;
   if (user.role === "carer") return user.carerId === channelId;
   if (user.role === "relative") return user.relatedClientId === channelId;
   return false;

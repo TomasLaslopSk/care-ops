@@ -22,7 +22,9 @@ function RunCard({ run }: { run: AgentRun }) {
         </div>
         <Badge tone={statusTone(run.status)}>{run.status}</Badge>
       </div>
-      <p className="text-xs text-muted mb-3">{run.project} · {run.id}</p>
+      <p className="text-xs text-muted mb-3">
+        {run.project} · {run.id} · generated {new Date(run.createdAt).toLocaleString()}
+      </p>
 
       <p className="text-sm mb-3">{run.summary}</p>
 
@@ -46,6 +48,7 @@ function RunCard({ run }: { run: AgentRun }) {
       {decided ? (
         <p className="text-xs text-muted">
           {run.status} {run.decisionNote ? `— “${run.decisionNote}”` : ""}
+          {run.decidedAt ? ` · ${new Date(run.decidedAt).toLocaleString()}` : ""}
         </p>
       ) : (
         <div className="flex flex-col gap-2">

@@ -42,8 +42,11 @@ const ROLE_PROJECT = {
 
 function nextBacklogItem() {
   const md = readFileSync(join(__dirname, "backlog.md"), "utf8");
-  const m = md.split("\n").find((l) => /^- \[ \] \(/.test(l));
-  if (!m) return null;
+  const items = md.split("\n").filter((l) => /^- \[ \] \(/.test(l));
+  if (!items.length) return null;
+  // Pick a random open item so each scheduled run looks like a different agent
+  // doing different work (nicer for a live demo than always the first item).
+  const m = items[Math.floor(Math.random() * items.length)];
   const role = m.match(/\(([^)]+)\)/)?.[1] ?? "reactDev";
   const task = m.replace(/^- \[ \] \([^)]+\)\s*/, "").trim();
   return { role, task };

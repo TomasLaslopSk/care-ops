@@ -4,7 +4,11 @@ name: night-agent
 # care-api, where the admin reviews it in the Agent Runs UI. Cron is UTC.
 on:
   schedule:
-    - cron: "0 2 * * *" # 02:00 UTC nightly
+    - cron: "0 2 * * *" # 02:00 UTC nightly (the "real" cadence)
+    # DEMO — interview window only: Thu Jun 25, ~13:00 local (GMT+2) = 11:00 UTC.
+    # Date-pinned to the 25th so it auto-stops afterwards. Remove after the demo if you like.
+    - cron: "45,55 10 25 6 *" # 12:45 & 12:55 local — warm-up so the page already has fresh runs
+    - cron: "*/10 11 25 6 *" # 13:00,13:10,…,13:50 local — during the interview
   workflow_dispatch: {} # also runnable on demand from the Actions tab
 
 jobs:

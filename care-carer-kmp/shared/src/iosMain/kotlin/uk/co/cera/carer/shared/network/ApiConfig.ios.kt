@@ -1,5 +1,5 @@
 package uk.co.cera.carer.shared.network
 
-// iOS simulator can reach the host's localhost directly.
-// For a real device, change this to your Mac's LAN IP.
-actual val apiBaseUrl: String = "http://localhost:3001/api"
+// Points at the live, deployed care-api. Same URL works on simulator and real devices.
+// For local development against a backend on your Mac, swap to: "http://localhost:3001/api"
+actual val apiBaseUrl: String = "https://care.prevlasy.sk/api"
