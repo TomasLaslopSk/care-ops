@@ -256,3 +256,12 @@ export const nextVisitId = () => `V-${visitSeq++}`;
 
 let runSeq = 1003;
 export const nextAgentRunId = () => `RUN-${++runSeq}`;
+
+let carerSeq = 1000 + carers.length;
+export const nextCarerId = () => `C-${carerSeq++}`;
+
+let clientSeq = 2000 + clients.length;
+export const nextClientId = () => `CL-${clientSeq++}`;
+
+let userSeq = 1000 + users.length;
+export const nextUserId = () => `U-${userSeq++}`;

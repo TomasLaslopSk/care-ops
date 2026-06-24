@@ -1,0 +1,57 @@
+name: mobile
+
+# Mobile (Kotlin Multiplatform) pipeline — runs ONLY when the mobile app folder
+# (or this workflow) changes. The web/API pipeline lives in ci.yml with its own
+# path filter, so a React-only change never triggers a (slow) mobile build and vice versa.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "care-carer-kmp/**"
+      - ".github/workflows/mobile.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "care-carer-kmp/**"
+      - ".github/workflows/mobile.yml"
+
+jobs:
+  android:
+    name: care-carer-kmp (Android — tests + APK)
+    runs-on: ubuntu-latest
+    defaults: { run: { working-directory: care-carer-kmp } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: "17" }
+      - uses: android-actions/setup-android@v3
+      # The repo has no committed Gradle wrapper, so bootstrap one with the runner's
+      # preinstalled Gradle, then use it for a reproducible build.
+      - name: Bootstrap Gradle wrapper
+        run: gradle wrapper --gradle-version 8.13
+      - name: Unit tests (commonTest)
+        run: ./gradlew testDebugUnitTest
+      - name: Build debug APK
+        run: ./gradlew :composeApp:assembleDebug
+      - uses: actions/upload-artifact@v4
+        with:
+          name: care-app-debug-apk
+          path: care-carer-kmp/composeApp/build/outputs/apk/debug/*.apk
+          retention-days: 14
+
+  ios:
+    name: care-carer-kmp (iOS — compile)
+    runs-on: macos-latest
+    defaults: { run: { working-directory: care-carer-kmp } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: "17" }
+      - name: Bootstrap Gradle wrapper
+        run: gradle wrapper --gradle-version 8.13
+      # Compiles the Kotlin/Native iOS framework — this is the CI-verifiable iOS signal.
+      # A signed .ipa additionally needs an Xcode project archive + an Apple signing
+      # identity (distribution cert + provisioning profile from secrets), wired the same
+      # way as a production iOS pipeline — out of scope for this unsigned demo build.
+      - name: Compile iOS framework
+        run: ./gradlew :composeApp:compileKotlinIosSimulatorArm64 :shared:compileKotlinIosSimulatorArm64

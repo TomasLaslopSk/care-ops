@@ -7,6 +7,7 @@ const QueryKeys = {
   getMessages: "get-messages",
   getClients: "get-clients",
   getStats: "get-stats",
+  getUsers: "get-users",
 } as const;
 
 export default QueryKeys;

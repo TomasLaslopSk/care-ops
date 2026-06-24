@@ -41,6 +41,22 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/CarersResponse" }
+    post:
+      operationId: createCarer
+      summary: Create a carer (operator/admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/NewCarerRequest" }
+      responses:
+        "201":
+          description: Created carer
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Carer" }
+        "400": { description: Validation error }
+        "403": { description: Forbidden }
   /api/stats:
     get:
       operationId: getStats
@@ -214,6 +230,22 @@ paths:
               schema: { $ref: "#/components/schemas/ClientsResponse" }
         "403":
           description: Forbidden
+    post:
+      operationId: createClient
+      summary: Create a client (operator/admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/NewClientRequest" }
+      responses:
+        "201":
+          description: Created client
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Client" }
+        "400": { description: Validation error }
+        "403": { description: Forbidden }
   /api/messages:
     get:
       operationId: getMessages
@@ -283,6 +315,34 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/ChannelsResponse" }
+  /api/users:
+    get:
+      operationId: getUsers
+      summary: List staff accounts (admin only)
+      responses:
+        "200":
+          description: Users
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/UsersResponse" }
+        "403": { description: Forbidden }
+    post:
+      operationId: createUser
+      summary: Create an operator or admin (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/NewUserRequest" }
+      responses:
+        "201":
+          description: Created user
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/User" }
+        "400": { description: Validation error }
+        "403": { description: Forbidden }
+        "409": { description: Email already exists }
 components:
   schemas:
     Role:
@@ -441,6 +501,40 @@ components:
       properties:
         report: { type: string }
       required: [report]
+    UsersResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items: { $ref: "#/components/schemas/User" }
+        total: { type: integer }
+      required: [data, total]
+    NewUserRequest:
+      type: object
+      properties:
+        name: { type: string }
+        email: { type: string }
+        password: { type: string }
+        role:
+          type: string
+          enum: [operator, admin]
+      required: [name, email, password, role]
+    NewCarerRequest:
+      type: object
+      properties:
+        name: { type: string }
+        region: { type: string }
+        status: { $ref: "#/components/schemas/CarerStatus" }
+      required: [name, region]
+    NewClientRequest:
+      type: object
+      properties:
+        name: { type: string }
+        region: { type: string }
+        address: { type: string }
+        lat: { type: number }
+        lng: { type: number }
+      required: [name, region]
     NewVisitRequest:
       type: object
       properties:

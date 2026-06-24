@@ -31,7 +31,8 @@ export interface paths {
         /** List carers (optionally filtered) */
         get: operations["getCarers"];
         put?: never;
-        post?: never;
+        /** Create a carer (operator/admin only) */
+        post: operations["createCarer"];
         delete?: never;
         options?: never;
         head?: never;
@@ -203,7 +204,8 @@ export interface paths {
         /** List clients (operator only) */
         get: operations["getClients"];
         put?: never;
-        post?: never;
+        /** Create a client (operator/admin only) */
+        post: operations["createClient"];
         delete?: never;
         options?: never;
         head?: never;
@@ -273,6 +275,24 @@ export interface paths {
         get: operations["getChannels"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List staff accounts (admin only) */
+        get: operations["getUsers"];
+        put?: never;
+        /** Create an operator or admin (admin only) */
+        post: operations["createUser"];
         delete?: never;
         options?: never;
         head?: never;
@@ -405,6 +425,29 @@ export interface components {
         VisitReportRequest: {
             report: string;
         };
+        UsersResponse: {
+            data: components["schemas"]["User"][];
+            total: number;
+        };
+        NewUserRequest: {
+            name: string;
+            email: string;
+            password: string;
+            /** @enum {string} */
+            role: "operator" | "admin";
+        };
+        NewCarerRequest: {
+            name: string;
+            region: string;
+            status?: components["schemas"]["CarerStatus"];
+        };
+        NewClientRequest: {
+            name: string;
+            region: string;
+            address?: string;
+            lat?: number;
+            lng?: number;
+        };
         NewVisitRequest: {
             clientId: string;
             carerId: string;
@@ -506,6 +549,44 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["CarersResponse"];
                 };
+            };
+        };
+    };
+    createCarer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NewCarerRequest"];
+            };
+        };
+        responses: {
+            /** @description Created carer */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Carer"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -890,6 +971,44 @@ export interface operations {
             };
         };
     };
+    createClient: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NewClientRequest"];
+            };
+        };
+        responses: {
+            /** @description Created client */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Client"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     getMessages: {
         parameters: {
             query?: {
@@ -1018,6 +1137,78 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["ChannelsResponse"];
                 };
+            };
+        };
+    };
+    getUsers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Users */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UsersResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    createUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NewUserRequest"];
+            };
+        };
+        responses: {
+            /** @description Created user */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["User"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Email already exists */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

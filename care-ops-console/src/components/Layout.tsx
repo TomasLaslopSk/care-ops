@@ -10,6 +10,7 @@ const nav: { to: string; label: string; adminOnly?: boolean }[] = [
   { to: "/scheduling", label: "Scheduling" },
   { to: "/chat", label: "Chat" },
   { to: "/agent-runs", label: "Agent runs", adminOnly: true },
+  { to: "/administration", label: "Administration", adminOnly: true },
 ];
 
 export default function Layout({ children }: { children: ReactNode }) {

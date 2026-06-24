@@ -1,9 +1,20 @@
+import { useEffect, useState } from "react";
 import useGetClients from "../hooks/useGetClients";
+import useCreateClient from "../hooks/useCreateClient";
+import NewClientForm from "../components/NewClientForm";
 import Card from "../components/ui/Card";
 
 export default function Clients() {
   const { data, isLoading, isError } = useGetClients();
+  const createClient = useCreateClient();
+  const [toast, setToast] = useState<string | null>(null);
   const clients = data?.data ?? [];
+
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(null), 3000);
+    return () => clearTimeout(t);
+  }, [toast]);
 
   return (
     <div>
@@ -11,6 +22,15 @@ export default function Clients() {
       <p className="text-muted text-sm mb-6">
         People receiving care{data ? ` — ${data.total}` : ""}.
       </p>
+
+      <NewClientForm
+        onSubmit={(v) =>
+          createClient.mutate(v, {
+            onSuccess: (c) => setToast(`Client created: ${c.name} (${c.region})`),
+            onError: () => setToast("Failed to create client"),
+          })
+        }
+      />
 
       {isLoading ? (
         <div className="flex justify-center py-10">
@@ -41,6 +61,12 @@ export default function Clients() {
             </tbody>
           </table>
         </Card>
+      )}
+
+      {toast && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-success text-white text-sm px-4 py-2 rounded-lg shadow-lg">
+          {toast}
+        </div>
       )}
     </div>
   );

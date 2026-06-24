@@ -24,6 +24,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.koin.compose.viewmodel.koinViewModel
 import uk.co.cera.carer.shared.network.dto.Visit
 import uk.co.cera.carer.util.formatDateTime
+import uk.co.cera.carer.util.isUpcoming
 
 @Composable
 fun VisitsScreen(
@@ -40,7 +41,9 @@ fun VisitsScreen(
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text(state.error!!, color = MaterialTheme.colorScheme.error)
             }
-        else ->
+        else -> {
+            // Only future visits — past ones live in the Schedule calendar.
+            val upcoming = state.visits.filter { isUpcoming(it.scheduledAt) }.sortedBy { it.scheduledAt }
             LazyColumn(
                 modifier = Modifier.fillMaxSize().padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -51,12 +54,22 @@ fun VisitsScreen(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Text("My visits (${state.visits.size})", style = MaterialTheme.typography.titleLarge)
+                        Text("My next visits (${upcoming.size})", style = MaterialTheme.typography.titleLarge)
                         OutlinedButton(onClick = onOpenChat) { Text("Chat") }
                     }
                 }
-                items(state.visits) { VisitRow(it, onClick = { onOpenVisit(it.id) }) }
+                if (upcoming.isEmpty()) {
+                    item {
+                        Text(
+                            "No upcoming visits.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+                items(upcoming) { VisitRow(it, onClick = { onOpenVisit(it.id) }) }
             }
+        }
     }
 }
 

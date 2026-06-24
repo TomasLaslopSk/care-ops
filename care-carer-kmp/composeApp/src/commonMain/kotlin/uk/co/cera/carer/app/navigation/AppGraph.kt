@@ -7,8 +7,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
 import uk.co.cera.carer.feature.chat.ChatScreen
 import uk.co.cera.carer.feature.login.LoginScreen
+import uk.co.cera.carer.feature.main.MainScreen
 import uk.co.cera.carer.feature.visitdetail.VisitDetailScreen
-import uk.co.cera.carer.feature.visits.VisitsScreen
 
 // Compose Navigation graph (same composable<Route> pattern as family_app's AppGraph).
 @Composable
@@ -25,9 +25,15 @@ fun AppGraph(navController: NavHostController) {
             )
         }
         composable<AppRoute.Visits> {
-            VisitsScreen(
+            MainScreen(
                 onOpenVisit = { id -> navController.navigate(AppRoute.VisitDetail(id)) },
                 onOpenChat = { navController.navigate(AppRoute.Chat) },
+                onLogout = {
+                    navController.navigate(AppRoute.Login) {
+                        popUpTo(AppRoute.Visits) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                },
             )
         }
         composable<AppRoute.VisitDetail> { entry ->

@@ -13,10 +13,17 @@ import {
   nextMessageId,
   nextVisitId,
   nextAgentRunId,
+  nextCarerId,
+  nextClientId,
+  nextUserId,
   type Message,
   type Visit,
   type VisitTask,
   type AgentRun,
+  type Carer,
+  type Client,
+  type User,
+  type Role,
 } from "./data.ts";
 
 // Shared secret the nightly runner uses to submit runs (header: x-agent-key).
@@ -103,6 +110,25 @@ app.get("/api/carers", requireAuth, (req, res) => {
   res.json({ data: result, total: result.length });
 });
 
+// Create a carer (operator/admin only).
+app.post("/api/carers", requireAuth, (req: AuthedRequest, res) => {
+  if (!isOps(req.user)) return res.status(403).json({ error: "operator only" });
+  const { name, region, status } = req.body ?? {};
+  if (!name || !String(name).trim()) return res.status(400).json({ error: "name is required" });
+  if (!region || !String(region).trim()) return res.status(400).json({ error: "region is required" });
+  const allowedStatus = ["active", "inactive", "onboarding"];
+  const carer: Carer = {
+    id: nextCarerId(),
+    name: String(name).trim(),
+    region: String(region),
+    status: (allowedStatus.includes(status) ? status : "onboarding") as Carer["status"],
+    visitsThisWeek: 0,
+  };
+  carers.unshift(carer); // newest first
+  save();
+  res.status(201).json(carer);
+});
+
 // Dashboard stats (operator/admin only). Computed from the current data.
 app.get("/api/stats", requireAuth, (req: AuthedRequest, res) => {
   if (req.user!.role !== "operator" && req.user!.role !== "admin") {
@@ -170,6 +196,25 @@ app.post("/api/visits", requireAuth, (req: AuthedRequest, res) => {
 app.get("/api/clients", requireAuth, (req: AuthedRequest, res) => {
   if (!isOps(req.user)) return res.status(403).json({ error: "operator only" });
   res.json({ data: clients, total: clients.length });
+});
+
+// Create a client (operator/admin only). lat/lng default to central London if omitted.
+app.post("/api/clients", requireAuth, (req: AuthedRequest, res) => {
+  if (!isOps(req.user)) return res.status(403).json({ error: "operator only" });
+  const { name, region, address, lat, lng } = req.body ?? {};
+  if (!name || !String(name).trim()) return res.status(400).json({ error: "name is required" });
+  if (!region || !String(region).trim()) return res.status(400).json({ error: "region is required" });
+  const client: Client = {
+    id: nextClientId(),
+    name: String(name).trim(),
+    region: String(region),
+    lat: typeof lat === "number" ? lat : 51.5074,
+    lng: typeof lng === "number" ? lng : -0.1278,
+    address: address ? String(address).trim() : "—",
+  };
+  clients.unshift(client); // newest first
+  save();
+  res.status(201).json(client);
 });
 
 // A single visit, scoped by role (carer own / relative own client / operator any).
@@ -361,6 +406,43 @@ app.post("/api/agent-runs/:id/decision", requireAuth, (req: AuthedRequest, res) 
   run.decisionNote = typeof note === "string" ? note : "";
   save();
   res.json(run);
+});
+
+// --- User administration (admin only) ---
+// List staff accounts (operators + admins + carers/relatives), never exposing passwords.
+app.get("/api/users", requireAuth, (req: AuthedRequest, res) => {
+  if (!requireAdmin(req, res)) return;
+  const data = users.map(({ password: _pw, ...safe }) => safe);
+  res.json({ data, total: data.length });
+});
+
+// Create an operator or admin (admin only). Passwords are stored plaintext here
+// for the learning demo only — never do this in production.
+app.post("/api/users", requireAuth, (req: AuthedRequest, res) => {
+  if (!requireAdmin(req, res)) return;
+  const { name, email, password, role } = req.body ?? {};
+  if (!name || !String(name).trim()) return res.status(400).json({ error: "name is required" });
+  if (!email || !String(email).trim()) return res.status(400).json({ error: "email is required" });
+  if (!password || String(password).length < 6) {
+    return res.status(400).json({ error: "password must be at least 6 characters" });
+  }
+  if (role !== "operator" && role !== "admin") {
+    return res.status(400).json({ error: "role must be operator or admin" });
+  }
+  if (users.some((u) => u.email.toLowerCase() === String(email).trim().toLowerCase())) {
+    return res.status(409).json({ error: "a user with this email already exists" });
+  }
+  const user: User = {
+    id: nextUserId(),
+    name: String(name).trim(),
+    email: String(email).trim(),
+    password: String(password),
+    role: role as Role,
+  };
+  users.push(user);
+  save();
+  const { password: _pw, ...safe } = user;
+  res.status(201).json(safe);
 });
 
 // --- SSE: token comes via ?token= (EventSource can't set headers) ---

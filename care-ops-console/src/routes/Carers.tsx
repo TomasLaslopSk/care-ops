@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useShallow } from "zustand/shallow";
 import useCarersStore from "../store/useCarersStore";
 import useGetCarers from "../hooks/useGetCarers";
+import useCreateCarer from "../hooks/useCreateCarer";
 import Filters from "../components/Filters";
 import CarersTable from "../components/CarersTable";
 import NewCarerForm from "../components/NewCarerForm";
@@ -11,6 +12,7 @@ export default function Carers() {
     useShallow((s) => ({ region: s.region, status: s.status })),
   );
   const { data, isLoading, isError } = useGetCarers(region, status);
+  const createCarer = useCreateCarer();
   const [toast, setToast] = useState<string | null>(null);
 
   useEffect(() => {
@@ -24,7 +26,14 @@ export default function Carers() {
       <h1 className="text-2xl font-bold mb-1">Carers</h1>
       <p className="text-muted text-sm mb-6">Filterable roster backed by the shared care-api.</p>
 
-      <NewCarerForm onSubmit={(v) => setToast(`Would create carer: ${v.name} (${v.region})`)} />
+      <NewCarerForm
+        onSubmit={(v) =>
+          createCarer.mutate(v, {
+            onSuccess: (c) => setToast(`Carer created: ${c.name} (${c.region})`),
+            onError: () => setToast("Failed to create carer"),
+          })
+        }
+      />
       <Filters />
       <CarersTable carers={data?.data ?? []} isLoading={isLoading} isError={isError} />
 

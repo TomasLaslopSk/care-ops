@@ -16,12 +16,16 @@ export type Alert = components["schemas"]["Alert"];
 
 export type User = components["schemas"]["User"];
 export type Role = components["schemas"]["Role"];
+export type UsersResponse = components["schemas"]["UsersResponse"];
+export type NewUserRequest = components["schemas"]["NewUserRequest"];
 export type Channel = components["schemas"]["Channel"];
 export type ChannelsResponse = components["schemas"]["ChannelsResponse"];
 export type LoginRequest = components["schemas"]["LoginRequest"];
 export type LoginResponse = components["schemas"]["LoginResponse"];
 export type Client = components["schemas"]["Client"];
 export type ClientsResponse = components["schemas"]["ClientsResponse"];
+export type NewCarerRequest = components["schemas"]["NewCarerRequest"];
+export type NewClientRequest = components["schemas"]["NewClientRequest"];
 export type AgentRun = components["schemas"]["AgentRun"];
 export type AgentRunsResponse = components["schemas"]["AgentRunsResponse"];
 export type StatsResponse = components["schemas"]["StatsResponse"];

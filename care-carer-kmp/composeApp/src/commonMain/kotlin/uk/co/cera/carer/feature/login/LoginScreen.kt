@@ -17,6 +17,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.koin.compose.viewmodel.koinViewModel
+import uk.co.cera.carer.theme.BrandLogo
 
 @Composable
 fun LoginScreen(
@@ -29,7 +30,7 @@ fun LoginScreen(
         modifier = Modifier.fillMaxSize().padding(24.dp),
         verticalArrangement = Arrangement.Center,
     ) {
-        Text("CareCarer", style = MaterialTheme.typography.headlineMedium)
+        BrandLogo(modifier = Modifier.padding(bottom = 4.dp))
         Text(
             "Sign in to see your visits.",
             style = MaterialTheme.typography.bodyMedium,

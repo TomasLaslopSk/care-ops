@@ -10,6 +10,7 @@ import Chat from "./routes/Chat";
 import VisitDetail from "./routes/VisitDetail";
 import Scheduling from "./routes/Scheduling";
 import AgentRuns from "./routes/AgentRuns";
+import Administration from "./routes/Administration";
 
 const rootRoute = createRootRoute({
   // Auth gate: no user -> Login (no shell). Otherwise the app shell + current route.
@@ -32,6 +33,7 @@ const clientsRoute = createRoute({ getParentRoute: () => rootRoute, path: "/clie
 const schedulingRoute = createRoute({ getParentRoute: () => rootRoute, path: "/scheduling", component: Scheduling });
 const chatRoute = createRoute({ getParentRoute: () => rootRoute, path: "/chat", component: Chat });
 const agentRunsRoute = createRoute({ getParentRoute: () => rootRoute, path: "/agent-runs", component: AgentRuns });
+const administrationRoute = createRoute({ getParentRoute: () => rootRoute, path: "/administration", component: Administration });
 
 const routeTree = rootRoute.addChildren([
   dashboardRoute,
@@ -42,6 +44,7 @@ const routeTree = rootRoute.addChildren([
   schedulingRoute,
   chatRoute,
   agentRunsRoute,
+  administrationRoute,
 ]);
 
 export const router = createRouter({ routeTree });

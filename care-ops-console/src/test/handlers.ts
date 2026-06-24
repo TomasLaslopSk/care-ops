@@ -1,11 +1,21 @@
 import { http, HttpResponse } from "msw";
-import type { Carer, Visit } from "../types";
+import type { Carer, Client, User, Visit } from "../types";
+
+export const mockUsers: User[] = [
+  { id: "U-OP1", name: "Olivia Operator", email: "operator@care.test", role: "operator" },
+  { id: "U-AD1", name: "Adele Admin", email: "admin@care.test", role: "admin" },
+];
 
 // Seeded shapes that mirror care-api's contract (small subset, enough for hooks/UI).
 export const mockCarers: Carer[] = [
   { id: "C-1000", name: "Amara Okoro", region: "North", status: "active", visitsThisWeek: 12 },
   { id: "C-1001", name: "Ben Carter", region: "South", status: "onboarding", visitsThisWeek: 3 },
   { id: "C-1002", name: "Chloe Davis", region: "North", status: "inactive", visitsThisWeek: 0 },
+];
+
+export const mockClients: Client[] = [
+  { id: "CL-2000", name: "Mabel Reed", region: "North", lat: 51.5, lng: -0.12, address: "1 Oak St" },
+  { id: "CL-2001", name: "Stanley Cole", region: "South", lat: 51.6, lng: -0.1, address: "2 Elm Rd" },
 ];
 
 export const mockVisits: Visit[] = [
@@ -62,6 +72,34 @@ export const handlers = [
     if (region) data = data.filter((c) => c.region === region);
     if (status) data = data.filter((c) => c.status === status);
     return HttpResponse.json({ data, total: data.length });
+  }),
+
+  http.post("*/api/carers", async ({ request }) => {
+    const b = (await request.json()) as { name: string; region: string; status?: string };
+    return HttpResponse.json(
+      { id: "C-9001", name: b.name, region: b.region, status: b.status ?? "onboarding", visitsThisWeek: 0 },
+      { status: 201 },
+    );
+  }),
+
+  http.get("*/api/clients", () => HttpResponse.json({ data: mockClients, total: mockClients.length })),
+
+  http.post("*/api/clients", async ({ request }) => {
+    const b = (await request.json()) as { name: string; region: string; address?: string };
+    return HttpResponse.json(
+      { id: "CL-9001", name: b.name, region: b.region, lat: 51.5, lng: -0.12, address: b.address || "—" },
+      { status: 201 },
+    );
+  }),
+
+  http.get("*/api/users", () => HttpResponse.json({ data: mockUsers, total: mockUsers.length })),
+
+  http.post("*/api/users", async ({ request }) => {
+    const b = (await request.json()) as { name: string; email: string; role: string };
+    return HttpResponse.json(
+      { id: "U-9001", name: b.name, email: b.email, role: b.role },
+      { status: 201 },
+    );
   }),
 
   http.get("*/api/visits", ({ request }) => {

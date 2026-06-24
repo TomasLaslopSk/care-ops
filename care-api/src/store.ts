@@ -12,7 +12,20 @@
 import { readFileSync, writeFileSync, existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
-import { visits, messages, agentRuns, type Visit, type Message, type AgentRun } from "./data.ts";
+import {
+  visits,
+  messages,
+  agentRuns,
+  carers,
+  clients,
+  users,
+  type Visit,
+  type Message,
+  type AgentRun,
+  type Carer,
+  type Client,
+  type User,
+} from "./data.ts";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 // In the cloud we point DATA_DIR at a persistent volume (e.g. /data on Railway);
@@ -34,10 +47,16 @@ interface PersistShape {
   agentRuns: AgentRun[];
   visitPatches: Record<string, VisitPatch>; // seed visits only
   createdVisits: Visit[]; // visits added at runtime
+  createdCarers: Carer[]; // carers added at runtime
+  createdClients: Client[]; // clients added at runtime
+  createdUsers: User[]; // operators/admins added at runtime
 }
 
 // Baselines captured from the fresh seed, so save() knows what counts as a change.
 const seedVisitIds = new Set(visits.map((v) => v.id));
+const seedCarerIds = new Set(carers.map((c) => c.id));
+const seedClientIds = new Set(clients.map((c) => c.id));
+const seedUserIds = new Set(users.map((u) => u.id));
 const seedCarerId = new Map(visits.map((v) => [v.id, v.carerId]));
 const seedStatus = new Map(visits.map((v) => [v.id, v.status]));
 
@@ -70,7 +89,11 @@ function snapshot(): PersistShape {
     if (Object.keys(patch).length) visitPatches[v.id] = patch;
   }
 
-  return { messages, agentRuns, visitPatches, createdVisits };
+  const createdCarers = carers.filter((c) => !seedCarerIds.has(c.id));
+  const createdClients = clients.filter((c) => !seedClientIds.has(c.id));
+  const createdUsers = users.filter((u) => !seedUserIds.has(u.id));
+
+  return { messages, agentRuns, visitPatches, createdVisits, createdCarers, createdClients, createdUsers };
 }
 
 // Apply a persisted snapshot back onto the seeded in-memory state.
@@ -84,6 +107,15 @@ function apply(data: PersistShape): void {
   if (Array.isArray(data.createdVisits)) {
     // newest first, mirroring POST /api/visits which unshifts
     for (const v of data.createdVisits) visits.unshift(v);
+  }
+  if (Array.isArray(data.createdCarers)) {
+    for (const c of data.createdCarers) if (!seedCarerIds.has(c.id)) carers.unshift(c);
+  }
+  if (Array.isArray(data.createdClients)) {
+    for (const c of data.createdClients) if (!seedClientIds.has(c.id)) clients.unshift(c);
+  }
+  if (Array.isArray(data.createdUsers)) {
+    for (const u of data.createdUsers) if (!seedUserIds.has(u.id)) users.push(u);
   }
   for (const [id, patch] of Object.entries(data.visitPatches ?? {})) {
     const v = visits.find((x) => x.id === id);
